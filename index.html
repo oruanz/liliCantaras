@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Liberdade vai cantar</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f0f0f">
+
+<link rel="stylesheet" href="https://unpkg.com/flipdown/dist/flipdown.css">
+
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+    padding: 15px;
+  }
+
+  h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  #ms {
+    font-size: 18px;
+    margin-top: 10px;
+    opacity: 0.8;
+  }
+
+  #phrase {
+    margin-top: 25px;
+    font-size: 16px;
+    max-width: 95%;
+    opacity: 0;
+    transition: opacity .5s ease;
+  }
+
+  #done {
+    display: none;
+    font-size: 26px;
+    margin-top: 20px;
+  }
+
+  @media (min-width: 768px) {
+    h1 { font-size: 36px; }
+  }
+</style>
+</head>
+
+<body>
+
+<h1>🎉 Liberdade vai cantar 🎉</h1>
+
+<div id="flipdown" class="flipdown"></div>
+<div id="ms"></div>
+
+<div id="phrase">Carregando frase...</div>
+
+<div id="done">🔥 CHEGOU O DIA 🔥</div>
+
+<audio id="music" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=success-1-6297.mp3"></audio>
+
+<script src="https://unpkg.com/flipdown/dist/flipdown.js"></script>
+
+<script>
+/* ================= SERVICE WORKER ================= */
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+
+/* ================= DATA ================= */
+const target = new Date("2026-06-06T00:00:00").getTime();
+const targetSeconds = target / 1000;
+
+/* ================= FLIP ================= */
+new FlipDown(targetSeconds, "flipdown", {
+  headings: ["Dias", "Horas", "Min", "Seg"]
+}).start();
+
+/* ================= MILISSEGUNDOS ================= */
+const msDiv = document.getElementById("ms");
+
+function updateMs() {
+  const diff = target - Date.now();
+
+  if (diff <= 0) {
+    document.querySelector(".flipdown").style.display = "none";
+    msDiv.style.display = "none";
+    document.getElementById("done").style.display = "block";
+    document.getElementById("music").play();
+    return;
+  }
+
+  msDiv.innerText = "ms: " + (diff % 1000).toString().padStart(3, "0");
+  requestAnimationFrame(updateMs);
+}
+updateMs();
+
+/* ================= FRASES ================= */
+
+const phraseDiv = document.getElementById("phrase");
+
+// pega histórico para não repetir
+let used = JSON.parse(localStorage.getItem("used_phrases") || "[]");
+
+fetch("phrases.json")
+  .then(r => r.json())
+  .then(list => {
+
+    // se usou todas, reinicia
+    if (used.length >= list.length) used = [];
+
+    // pega as disponíveis
+    const available = list.filter((_, i) => !used.includes(i));
+
+    // escolhe uma
+    const index = list.indexOf(
+      available[Math.floor(Math.random() * available.length)]
+    );
+
+    used.push(index);
+    localStorage.setItem("used_phrases", JSON.stringify(used));
+
+    phraseDiv.innerText = "✨ " + list[index];
+
+    setTimeout(() => phraseDiv.style.opacity = 1, 200);
+  })
+  .catch(() => {
+    phraseDiv.innerText = "✨ Seja forte e corajoso.";
+    phraseDiv.style.opacity = 1;
+  });
+</script>
+
+</body>
+</html>
