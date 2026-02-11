@@ -11,68 +11,96 @@
 <link rel="stylesheet" href="https://unpkg.com/flipdown/dist/flipdown.css">
 
 <style>
-  body {
-    margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
-    color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    text-align: center;
-    padding: 15px;
-  }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
 
-  h1 {
-    font-size: 24px;
-    margin-bottom: 20px;
-  }
+/* FUNDO */
+body::before {
+  content: "";
+  position: fixed;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, #5f2cff, #00c2ff, #00ff88, #5f2cff);
+  animation: bgMove 15s linear infinite;
+  z-index: -1;
+  filter: blur(120px);
+}
 
-  #ms {
-    font-size: 18px;
-    margin-top: 10px;
-    opacity: 0.8;
-  }
+@keyframes bgMove {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(-25%, -25%); }
+  100% { transform: translate(0, 0); }
+}
 
-  #phrase {
-    margin-top: 25px;
-    font-size: 16px;
-    max-width: 95%;
-    opacity: 0;
-    transition: opacity .5s ease;
-  }
+/* CARD */
+.card {
+  backdrop-filter: blur(25px);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 25px;
+  width: 95%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0,0,0,0.3);
+}
 
-  #done {
-    display: none;
-    font-size: 26px;
-    margin-top: 20px;
-  }
+h1 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
 
-  @media (min-width: 768px) {
-    h1 { font-size: 36px; }
-  }
+#ms {
+  font-size: 16px;
+  margin-top: 10px;
+  opacity: 0.85;
+}
+
+#phrase {
+  margin-top: 20px;
+  font-size: 15px;
+  opacity: 0;
+  transition: opacity .5s ease;
+}
+
+#done {
+  display: none;
+  font-size: 22px;
+  margin-top: 15px;
+}
+
+@media (min-width: 768px) {
+  h1 { font-size: 30px; }
+}
 </style>
 </head>
 
 <body>
 
-<h1>🎉 Liberdade vai cantar 🎉</h1>
+<div class="card">
+  <h1>🎉 Liberdade vai cantar 🎉</h1>
 
-<div id="flipdown" class="flipdown"></div>
-<div id="ms"></div>
+  <div id="flipdown" class="flipdown"></div>
+  <div id="ms"></div>
 
-<div id="phrase">Carregando frase...</div>
+  <div id="phrase">Carregando frase...</div>
 
-<div id="done">🔥 CHEGOU O DIA 🔥</div>
+  <div id="done">🔥 CHEGOU O DIA 🔥</div>
+</div>
 
 <audio id="music" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=success-1-6297.mp3"></audio>
 
 <script src="https://unpkg.com/flipdown/dist/flipdown.js"></script>
 
 <script>
-/* ================= SERVICE WORKER ================= */
+/* ================= PWA ================= */
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
@@ -105,37 +133,31 @@ function updateMs() {
 }
 updateMs();
 
-/* ================= FRASES ================= */
+/* ================= FRASES JSON ================= */
 
 const phraseDiv = document.getElementById("phrase");
-
-// pega histórico para não repetir
 let used = JSON.parse(localStorage.getItem("used_phrases") || "[]");
 
 fetch("phrases.json")
   .then(r => r.json())
   .then(list => {
 
-    // se usou todas, reinicia
     if (used.length >= list.length) used = [];
 
-    // pega as disponíveis
-    const available = list.filter((_, i) => !used.includes(i));
+    const available = list
+      .map((text, i) => ({ text, i }))
+      .filter(item => !used.includes(item.i));
 
-    // escolhe uma
-    const index = list.indexOf(
-      available[Math.floor(Math.random() * available.length)]
-    );
+    const chosen = available[Math.floor(Math.random() * available.length)];
 
-    used.push(index);
+    used.push(chosen.i);
     localStorage.setItem("used_phrases", JSON.stringify(used));
 
-    phraseDiv.innerText = "✨ " + list[index];
-
+    phraseDiv.innerText = "✨ " + chosen.text;
     setTimeout(() => phraseDiv.style.opacity = 1, 200);
   })
   .catch(() => {
-    phraseDiv.innerText = "✨ Seja forte e corajoso.";
+    phraseDiv.innerText = "✨ Continue firme.";
     phraseDiv.style.opacity = 1;
   });
 </script>
