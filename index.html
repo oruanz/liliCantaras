@@ -2,164 +2,578 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Liberdade vai cantar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>#PJL - Liberdade vai cantar</title>
 
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f0f0f">
-
-<link rel="stylesheet" href="https://unpkg.com/flipdown/dist/flipdown.css">
+<meta name="theme-color" content="#f0f4f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
 <style>
+/* ================= VARIÁVEIS (CLARO / ESCURO) ================= */
+:root {
+  --bg-color: #f4f7fb; 
+  --text-color: #1d1d1f; 
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-shadow: rgba(0, 100, 255, 0.1);
+  --timer-bg: rgba(255, 255, 255, 0.4);
+  --timer-border: rgba(255, 255, 255, 0.6);
+  --label-color: #6e6e73;
+  --accent-color: #007aff;
+  
+  /* Cores padrão do fundo (serão alteradas via JS pelo horário) */
+  --orb-1: #007aff; 
+  --orb-2: #5ac8fa; 
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #000000;
+    --text-color: #f5f5f7;
+    --glass-bg: rgba(30, 30, 32, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-shadow: rgba(0, 0, 0, 0.5);
+    --timer-bg: rgba(0, 0, 0, 0.3);
+    --timer-border: rgba(255, 255, 255, 0.1);
+    --label-color: #a1a1a6;
+    --accent-color: #0a84ff;
+  }
+}
+
+/* ================= RESET & ESTRUTURA ================= */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text-color);
+  background-color: var(--bg-color);
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: 100dvh; 
+  overflow: hidden; 
+  touch-action: none; 
+}
+
+/* ================= BACKGROUND ANIMADO ================= */
+.background {
+  position: absolute;
+  top: 0; left: 0; width: 100vw; height: 100vh;
   overflow: hidden;
-}
-
-/* FUNDO */
-body::before {
-  content: "";
-  position: fixed;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, #5f2cff, #00c2ff, #00ff88, #5f2cff);
-  animation: bgMove 15s linear infinite;
   z-index: -1;
-  filter: blur(120px);
+  transition: background-color 2s ease;
 }
 
-@keyframes bgMove {
-  0% { transform: translate(0, 0); }
-  50% { transform: translate(-25%, -25%); }
-  100% { transform: translate(0, 0); }
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px); 
+  opacity: 0.7;
+  animation: float 20s infinite alternate ease-in-out;
+  transition: background 2s ease; /* Transição suave na troca de cor do dia */
 }
 
-/* CARD */
+.orb1 { width: 350px; height: 350px; background: var(--orb-1); top: -10%; left: -10%; }
+.orb2 { width: 300px; height: 300px; background: var(--orb-2); bottom: -10%; right: -10%; animation-delay: -10s; }
+
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(15vw, 15vh) scale(1.2); }
+}
+
+/* ================= CARD LIQUID GLASS ================= */
 .card {
-  backdrop-filter: blur(25px);
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 25px;
-  width: 95%;
-  max-width: 420px;
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  border-radius: 32px; 
+  box-shadow: 0 20px 40px var(--glass-shadow);
+  padding: 30px 20px 40px 20px;
+  width: 92%;
+  max-width: 450px; 
   text-align: center;
-  box-shadow: 0 0 40px rgba(0,0,0,0.3);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-h1 {
-  font-size: 22px;
-  margin-bottom: 20px;
+/* ================= CABEÇALHO (AÇÕES) ================= */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  height: 30px;
 }
 
-#ms {
-  font-size: 16px;
-  margin-top: 10px;
-  opacity: 0.85;
+.btn-action {
+  background: var(--timer-bg);
+  border: 1px solid var(--timer-border);
+  border-radius: 12px;
+  padding: 6px 12px;
+  color: var(--text-color);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.btn-action:active { transform: scale(0.95); opacity: 0.8; }
+.btn-action svg { width: 16px; height: 16px; fill: currentColor; }
+
+#install-btn { display: none; color: var(--accent-color); }
+
+h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; margin: 0 0 15px 0; }
+
+/* ================= BARRA DE PROGRESSO ================= */
+.progress-container {
+  width: 100%;
+  background: var(--timer-border);
+  border-radius: 10px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 5px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent-color);
+  width: 0%; /* Inicia zerado, o JS preenche */
+  border-radius: 10px;
+  transition: width 1s ease-out;
+  box-shadow: 0 0 10px var(--accent-color);
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--label-color);
+  font-weight: 600;
+  margin-bottom: 25px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ================= CRONÔMETRO ================= */
+.countdown-container { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 0 auto; }
+.time-box { display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--timer-bg); border: 1px solid var(--timer-border); border-radius: 18px; padding: 15px 10px; min-width: 70px; }
+.digits-group { display: flex; flex-direction: row; }
+.digit-wrapper { position: relative; display: inline-flex; justify-content: center; align-items: center; overflow: hidden; }
+.placeholder { visibility: hidden; }
+.time-val { font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: 1px; }
+
+.digit { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0.0, 0.2, 1); }
+.digit.old { transform: translateY(-80%); opacity: 0; }
+.digit.new { transform: translateY(80%); opacity: 0; }
+.digit.current { transform: translateY(0); opacity: 1; }
+
+.time-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px; color: var(--label-color); margin-top: 6px; }
+.separator { font-size: 24px; font-weight: 300; color: var(--label-color); opacity: 0.5; margin-bottom: 20px; }
+
+/* ================= FRASE E FAVORITO ================= */
+.phrase-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: 30px;
+  gap: 10px;
+  padding: 0 10px;
 }
 
 #phrase {
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+  font-style: italic;
+  flex: 1;
+}
+
+.fav-btn {
+  background: none; border: none; font-size: 22px; cursor: pointer;
+  color: var(--label-color); transition: transform 0.2s, color 0.2s;
+  padding: 0; margin-top: 2px;
+}
+.fav-btn:active { transform: scale(0.8); }
+.fav-btn.active { color: #ff3b30; /* Vermelho Apple */ }
+
+.view-favs {
   margin-top: 20px;
-  font-size: 15px;
-  opacity: 0;
-  transition: opacity .5s ease;
+  font-size: 13px;
+  color: var(--accent-color);
+  background: none; border: none; cursor: pointer; font-weight: 600;
 }
 
-#done {
-  display: none;
-  font-size: 22px;
-  margin-top: 15px;
+/* ================= MODAL FAVORITOS ================= */
+.modal-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  z-index: 10; display: flex; justify-content: center; align-items: flex-end;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
 }
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
 
+.modal-content {
+  background: var(--glass-bg); border-top: 1px solid var(--glass-border);
+  width: 100%; height: 75%; border-radius: 32px 32px 0 0;
+  padding: 20px; display: flex; flex-direction: column;
+  transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.modal-overlay.show .modal-content { transform: translateY(0); }
+
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--timer-border); padding-bottom: 10px; }
+.modal-header h2 { font-size: 18px; margin: 0; }
+.close-modal { background: var(--timer-bg); border: none; border-radius: 50%; width: 30px; height: 30px; color: var(--text-color); font-weight: bold; cursor: pointer; }
+
+.fav-list { flex: 1; overflow-y: auto; padding-right: 5px; text-align: left; }
+.fav-item { padding: 15px; border-bottom: 1px solid var(--timer-border); font-style: italic; font-size: 15px; line-height: 1.4; display: flex; justify-content: space-between; align-items: center; }
+.remove-fav { background: none; border: none; color: #ff3b30; font-size: 18px; cursor: pointer; }
+.empty-fav { text-align: center; color: var(--label-color); margin-top: 40px; }
+
+/* ================= RESPONSIVIDADE ================= */
 @media (min-width: 768px) {
-  h1 { font-size: 30px; }
+  .card { max-width: 700px; padding: 40px 40px 50px 40px; border-radius: 40px; }
+  h1 { font-size: 34px; margin-bottom: 25px; }
+  .countdown-container { gap: 15px; }
+  .time-box { min-width: 100px; padding: 20px 15px; border-radius: 24px; }
+  .time-val { font-size: 48px; }
+  .time-label { font-size: 13px; margin-top: 8px; }
+  .separator { font-size: 32px; margin-bottom: 25px; }
+  .modal-content { width: 450px; height: 60%; border-radius: 32px; align-self: center; margin-bottom: 50px; }
+}
+@media (max-width: 360px) {
+  .time-box { min-width: 60px; padding: 12px 5px; }
+  .time-val { font-size: 26px; }
 }
 </style>
 </head>
 
 <body>
 
+<div class="background">
+  <div class="orb orb1" id="orb1"></div>
+  <div class="orb orb2" id="orb2"></div>
+</div>
+
 <div class="card">
-  <h1>🎉 Liberdade vai cantar 🎉</h1>
+  
+  <div class="card-header">
+    <button id="install-btn" class="btn-action">
+      <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Instalar
+    </button>
+    <div style="flex:1"></div>
+    <button id="share-btn" class="btn-action">
+      <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg> Compartilhar
+    </button>
+  </div>
 
-  <div id="flipdown" class="flipdown"></div>
-  <div id="ms"></div>
+  <h1>#PJL - Liberdade vai cantar</h1>
 
-  <div id="phrase">Carregando frase...</div>
+  <div class="progress-container">
+    <div class="progress-fill" id="progress-bar"></div>
+  </div>
+  <div class="progress-text" id="progress-text">Calculando progresso...</div>
 
-  <div id="done">🔥 CHEGOU O DIA 🔥</div>
+  <div class="countdown-container" id="countdown">
+    <div class="time-box">
+      <div class="digits-group">
+        <div class="digit-wrapper" id="days-t"><span class="placeholder time-val">0</span></div>
+        <div class="digit-wrapper" id="days-u"><span class="placeholder time-val">0</span></div>
+      </div>
+      <span class="time-label">Dias</span>
+    </div>
+    <span class="separator">:</span>
+    <div class="time-box">
+      <div class="digits-group">
+        <div class="digit-wrapper" id="hours-t"><span class="placeholder time-val">0</span></div>
+        <div class="digit-wrapper" id="hours-u"><span class="placeholder time-val">0</span></div>
+      </div>
+      <span class="time-label">Horas</span>
+    </div>
+    <span class="separator">:</span>
+    <div class="time-box">
+      <div class="digits-group">
+        <div class="digit-wrapper" id="minutes-t"><span class="placeholder time-val">0</span></div>
+        <div class="digit-wrapper" id="minutes-u"><span class="placeholder time-val">0</span></div>
+      </div>
+      <span class="time-label">Min</span>
+    </div>
+    <span class="separator">:</span>
+    <div class="time-box">
+      <div class="digits-group">
+        <div class="digit-wrapper" id="seconds-t"><span class="placeholder time-val">0</span></div>
+        <div class="digit-wrapper" id="seconds-u"><span class="placeholder time-val">0</span></div>
+      </div>
+      <span class="time-label">Seg</span>
+    </div>
+  </div>
+
+  <div id="done" style="display:none; font-size: 24px; font-weight: 700; margin-top: 20px; color: var(--orb-1);">🕊️ CHEGOU O DIA 🕊️</div>
+
+  <div class="phrase-section">
+    <div id="phrase">Carregando frase...</div>
+    <button class="fav-btn" id="fav-btn">🤍</button>
+  </div>
+  
+  <button class="view-favs" id="open-favs">Ver frases favoritas</button>
+</div>
+
+<div class="modal-overlay" id="fav-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Frases Guardadas</h2>
+      <button class="close-modal" id="close-favs">×</button>
+    </div>
+    <div class="fav-list" id="fav-list">
+      </div>
+  </div>
 </div>
 
 <audio id="music" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=success-1-6297.mp3"></audio>
 
-<script src="https://unpkg.com/flipdown/dist/flipdown.js"></script>
-
 <script>
-/* ================= PWA ================= */
+/* ================= 1. PWA & INSTALAÇÃO ================= */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
+  navigator.serviceWorker.register("sw.js").catch(err => console.log(err));
 }
 
-/* ================= DATA ================= */
-const target = new Date("2026-06-06T00:00:00").getTime();
-const targetSeconds = target / 1000;
+let deferredPrompt;
+const installBtn = document.getElementById("install-btn");
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'flex'; // Mostra o botão se puder instalar
+});
 
-/* ================= FLIP ================= */
-new FlipDown(targetSeconds, "flipdown", {
-  headings: ["Dias", "Horas", "Min", "Seg"]
-}).start();
+installBtn.addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') installBtn.style.display = 'none';
+    deferredPrompt = null;
+  }
+});
 
-/* ================= MILISSEGUNDOS ================= */
-const msDiv = document.getElementById("ms");
+/* ================= 2. FUNDO DINÂMICO (HORA DO DIA) ================= */
+function setDynamicBackground() {
+  const hour = new Date().getHours();
+  const root = document.documentElement;
+  
+  if (hour >= 6 && hour < 12) {
+    // Manhã (Esperança): Dourado e Azul Claro
+    root.style.setProperty('--orb-1', '#f2c94c');
+    root.style.setProperty('--orb-2', '#5ac8fa');
+  } else if (hour >= 12 && hour < 18) {
+    // Tarde (Energia): Azul Apple vibrante
+    root.style.setProperty('--orb-1', '#007aff');
+    root.style.setProperty('--orb-2', '#5ac8fa');
+  } else {
+    // Noite (Calma/Reflexão): Roxo e Azul escuro
+    root.style.setProperty('--orb-1', '#5856d6');
+    root.style.setProperty('--orb-2', '#1c1c1e');
+  }
+}
+setDynamicBackground(); // Roda ao abrir
+setInterval(setDynamicBackground, 60000 * 60); // Checa a cada hora
 
-function updateMs() {
-  const diff = target - Date.now();
+/* ================= 3. DATAS E BARRA DE PROGRESSO ================= */
+const startDate = new Date("2025-06-06T00:00:00").getTime();
+const targetDate = new Date("2026-06-06T00:00:00").getTime();
+const progressBar = document.getElementById("progress-bar");
+const progressText = document.getElementById("progress-text");
+
+function updateProgress() {
+  const now = new Date().getTime();
+  const totalDuration = targetDate - startDate;
+  const passedDuration = now - startDate;
+  
+  let percentage = (passedDuration / totalDuration) * 100;
+  if (percentage < 0) percentage = 0;
+  if (percentage > 100) percentage = 100;
+
+  progressBar.style.width = percentage + "%";
+  // Mostra com 3 casas decimais para dar a sensação de movimento constante
+  progressText.innerText = percentage.toFixed(2) + "% da caminhada concluída"; 
+}
+
+/* ================= 4. CRONÔMETRO ================= */
+function updateDigit(wrapperId, newValue) {
+  const container = document.getElementById(wrapperId);
+  if (!container) return;
+  const currentDigit = container.querySelector('.digit.current');
+  const currentText = currentDigit ? currentDigit.innerText : null;
+
+  if (currentText !== newValue) {
+    const newDigit = document.createElement('span');
+    newDigit.className = 'time-val digit new';
+    newDigit.innerText = newValue;
+    container.appendChild(newDigit);
+    void newDigit.offsetWidth; 
+
+    if (currentDigit) {
+      currentDigit.classList.remove('current');
+      currentDigit.classList.add('old');
+      setTimeout(() => {
+        if(currentDigit.parentNode === container) container.removeChild(currentDigit);
+      }, 400);
+    }
+    newDigit.classList.remove('new');
+    newDigit.classList.add('current');
+  }
+}
+
+let dForShare = "0"; // Guardado para o botão de compartilhar
+
+function updateCountdown() {
+  const now = new Date().getTime();
+  const diff = targetDate - now;
 
   if (diff <= 0) {
-    document.querySelector(".flipdown").style.display = "none";
-    msDiv.style.display = "none";
+    document.getElementById("countdown").style.display = "none";
     document.getElementById("done").style.display = "block";
-    document.getElementById("music").play();
+    document.getElementById("music").play().catch(e => console.log(e));
+    progressBar.style.width = "100%";
+    progressText.innerText = "100% concluído";
     return;
   }
 
-  msDiv.innerText = "ms: " + (diff % 1000).toString().padStart(3, "0");
-  requestAnimationFrame(updateMs);
+  const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const s = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  dForShare = d; // Salva para o texto de compartilhamento
+
+  const dStr = d.toString().padStart(2, "0");
+  const hStr = h.toString().padStart(2, "0");
+  const mStr = m.toString().padStart(2, "0");
+  const sStr = s.toString().padStart(2, "0");
+
+  updateDigit('days-t', dStr[0]); updateDigit('days-u', dStr[1]);
+  updateDigit('hours-t', hStr[0]); updateDigit('hours-u', hStr[1]);
+  updateDigit('minutes-t', mStr[0]); updateDigit('minutes-u', mStr[1]);
+  updateDigit('seconds-t', sStr[0]); updateDigit('seconds-u', sStr[1]);
+
+  updateProgress(); // Atualiza a barra junto com o cronômetro
 }
-updateMs();
 
-/* ================= FRASES JSON ================= */
+setInterval(updateCountdown, 1000);
+updateCountdown();
 
+/* ================= 5. FRASE E COMPARTILHAMENTO ================= */
 const phraseDiv = document.getElementById("phrase");
-let used = JSON.parse(localStorage.getItem("used_phrases") || "[]");
+let currentPhraseText = "";
+const todayDate = new Date().toISOString().split('T')[0];
+const storedData = JSON.parse(localStorage.getItem("daily_phrase_data") || "{}");
 
 fetch("phrases.json")
   .then(r => r.json())
   .then(list => {
-
-    if (used.length >= list.length) used = [];
-
-    const available = list
-      .map((text, i) => ({ text, i }))
-      .filter(item => !used.includes(item.i));
-
-    const chosen = available[Math.floor(Math.random() * available.length)];
-
-    used.push(chosen.i);
-    localStorage.setItem("used_phrases", JSON.stringify(used));
-
-    phraseDiv.innerText = "✨ " + chosen.text;
-    setTimeout(() => phraseDiv.style.opacity = 1, 200);
+    if (storedData.date === todayDate && storedData.phrase) {
+      currentPhraseText = storedData.phrase;
+    } else {
+      let used = storedData.used || [];
+      if (used.length >= list.length) used = [];
+      const available = list.filter((_, index) => !used.includes(index));
+      const randomText = available[Math.floor(Math.random() * available.length)];
+      used.push(list.indexOf(randomText));
+      localStorage.setItem("daily_phrase_data", JSON.stringify({ date: todayDate, phrase: randomText, used: used }));
+      currentPhraseText = randomText;
+    }
+    phraseDiv.innerText = "❝ " + currentPhraseText + " ❞";
+    checkIfFavorited(currentPhraseText);
   })
   .catch(() => {
-    phraseDiv.innerText = "✨ Continue firme.";
-    phraseDiv.style.opacity = 1;
+    currentPhraseText = "Mantenha a mente forte e a cabeça erguida.";
+    phraseDiv.innerText = "❝ " + currentPhraseText + " ❞";
   });
+
+// Botão Compartilhar (Web Share API)
+document.getElementById("share-btn").addEventListener("click", () => {
+  if (navigator.share) {
+    navigator.share({
+      title: '#PJL - Liberdade vai cantar',
+      text: `Faltam apenas ${dForShare} dias para a liberdade cantar! 🕊️\n\nFrase do dia: "${currentPhraseText}"`
+    }).catch(console.error);
+  } else {
+    alert("Seu navegador não suporta compartilhamento direto.");
+  }
+});
+
+/* ================= 6. FAVORITOS (CORAÇÃO) ================= */
+const favBtn = document.getElementById("fav-btn");
+const favModal = document.getElementById("fav-modal");
+const favListDiv = document.getElementById("fav-list");
+
+function getFavs() { return JSON.parse(localStorage.getItem("fav_phrases") || "[]"); }
+function saveFavs(favs) { localStorage.setItem("fav_phrases", JSON.stringify(favs)); }
+
+function checkIfFavorited(text) {
+  const favs = getFavs();
+  if (favs.includes(text)) {
+    favBtn.innerText = "❤️"; favBtn.classList.add("active");
+  } else {
+    favBtn.innerText = "🤍"; favBtn.classList.remove("active");
+  }
+}
+
+// Ao clicar no coração
+favBtn.addEventListener("click", () => {
+  let favs = getFavs();
+  if (favs.includes(currentPhraseText)) {
+    favs = favs.filter(f => f !== currentPhraseText); // Remove
+  } else {
+    favs.push(currentPhraseText); // Adiciona
+  }
+  saveFavs(favs);
+  checkIfFavorited(currentPhraseText);
+  renderFavList(); // Atualiza a lista caso o modal esteja aberto
+});
+
+// Modal de visualização
+document.getElementById("open-favs").addEventListener("click", () => {
+  renderFavList();
+  favModal.classList.add("show");
+});
+
+document.getElementById("close-favs").addEventListener("click", () => {
+  favModal.classList.remove("show");
+});
+
+function renderFavList() {
+  const favs = getFavs();
+  favListDiv.innerHTML = "";
+  
+  if (favs.length === 0) {
+    favListDiv.innerHTML = "<div class='empty-fav'>Nenhuma frase favoritada ainda.</div>";
+    return;
+  }
+
+  favs.forEach((texto) => {
+    const item = document.createElement("div");
+    item.className = "fav-item";
+    item.innerHTML = `
+      <span>" ${texto} "</span>
+      <button class="remove-fav" onclick="removeFavFromList('${texto.replace(/'/g, "\\'")}')">×</button>
+    `;
+    favListDiv.appendChild(item);
+  });
+}
+
+window.removeFavFromList = function(texto) {
+  let favs = getFavs();
+  favs = favs.filter(f => f !== texto);
+  saveFavs(favs);
+  renderFavList();
+  if (texto === currentPhraseText) checkIfFavorited(currentPhraseText);
+};
 </script>
 
 </body>
